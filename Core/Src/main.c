@@ -45,14 +45,26 @@ CAN_HandleTypeDef hcan;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+//main TXHeader ,this header is used to send data
+//when sending any data assign the required header values
+//to this header then send this header
+CAN_TxHeaderTypeDef MTxHeader;
 CAN_TxHeaderTypeDef TxHeader;
+CAN_TxHeaderTypeDef TxHeader2;
+CAN_TxHeaderTypeDef TxHeader3;
+CAN_TxHeaderTypeDef TxHeader4;
+CAN_TxHeaderTypeDef TxHeader5;
 CAN_RxHeaderTypeDef RxHeader;
 
 CAN_TxHeaderTypeDef tempTxHeader;
 
 uint8_t TxData[1]={1};
+uint8_t TxData2[8]="Abdalla";
+uint8_t TxData3[8]="Ahmed  ";
+uint8_t TxData4[8]="Fatima";
+uint8_t TxData5[8]="Mohamed";
 uint8_t RxData[8];
-uint32_t Mailbox=0;
+uint32_t Mailbox=CAN_TX_MAILBOX0;
 uint8_t resend=0;
 
 
@@ -63,8 +75,8 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
 static void MX_USART1_UART_Init(void);
-void NumericToASCII(uint32_t value,uint8_t *asciiValue,uint8_t * length);
 /* USER CODE BEGIN PFP */
+void NumericToASCII(uint32_t value,uint8_t *asciiValue,uint8_t * length);
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	uint8_t NewLine[25]="\n Received: \n ID: ";
@@ -89,9 +101,17 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 		HAL_UART_Transmit(&huart1, tempid,1, 200);
 	}
 
-
+	//echo to replay the same massage received for testing purposes
 	 HAL_CAN_AddTxMessage(hcan, &tempTxHeader, RxData, &Mailbox);
 
+
+}
+
+void HAL_CAN_TxMailbox0CompleteCallback(CAN_HandleTypeDef *hcan)
+{
+  /* Prevent unused argument(s) compilation warning */
+	uint8_t NewLine[25]="\n Acknowledged: \n ID: ";
+		HAL_UART_Transmit(&huart1, NewLine, 18, 200);
 
 }
 /* USER CODE END PFP */
@@ -139,28 +159,84 @@ int main(void)
   TxHeader.IDE = CAN_ID_STD;
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.TransmitGlobalTime = DISABLE;
-  TxHeader.StdId = 0xff;
+  TxHeader.StdId = 0x1;
 
-  const char * vStr="value sent ";
+  TxHeader2 =MTxHeader;
+  TxHeader3 =MTxHeader;
+  TxHeader4 =MTxHeader;
+  TxHeader5 =MTxHeader;
+
+  TxHeader2.StdId=0x2;
+  TxHeader2.DLC=8;
+  TxHeader3.StdId=0x3;
+  TxHeader3.DLC=8;
+  TxHeader4.StdId=0x4;
+  TxHeader4.DLC=8;
+  TxHeader5.StdId=0x5;
+  TxHeader5.DLC=8;
+
+
+  const char * vStr="value sent \n";
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  //uint8_t txtOK[]="HAL OK \n";
+
 	  for (uint8_t var = 0; var < 8; var++) {
 		  TxData[0]=var;
-		  HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &Mailbox);
+		  TxHeader.StdId=0x10+var;
+		  MTxHeader=TxHeader;
+		  uint8_t txtNOK[]="HAL NOK MSG\n";
+		  if(HAL_CAN_AddTxMessage(&hcan, &MTxHeader, TxData, &Mailbox)==HAL_OK)
+			  {
+			  HAL_UART_Transmit(&huart1, (const uint8_t *)"HAL OK MSG1 \n", 13, 100);
+			  }
+		  else
+			  HAL_UART_Transmit(&huart1, (const uint8_t *)txtNOK, 11, 100);
 
+		  MTxHeader=TxHeader2;
+		  if(HAL_CAN_AddTxMessage(&hcan, &MTxHeader, TxData2, &Mailbox)==HAL_OK)
+				  {
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)"HAL OK MSG2 \n", 13, 100);
+				  }
+			  else
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)txtNOK, 11, 100);
 
+		  MTxHeader=TxHeader3;
+		  if(HAL_CAN_AddTxMessage(&hcan, &MTxHeader, TxData3, &Mailbox)==HAL_OK)
+				  {
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)"HAL OK MSG3 \n", 13, 100);
+				  }
+			  else
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)txtNOK, 11, 100);
+
+		  MTxHeader=TxHeader4;
+		  if(HAL_CAN_AddTxMessage(&hcan, &MTxHeader, TxData4, &Mailbox)==HAL_OK)
+				  {
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)"HAL OK MSG4 \n", 13, 100);
+				  }
+			  else
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)"HAL NOT OK \n", 13, 100);
+
+		  MTxHeader=TxHeader5;
+		  if(HAL_CAN_AddTxMessage(&hcan, &MTxHeader, TxData5, &Mailbox)==HAL_OK)
+				  {
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)"HAL OK MSG5 \n", 13, 100);
+				  }
+			  else
+				  HAL_UART_Transmit(&huart1, (const uint8_t *)"HAL NOT OK \n", 13, 100);
 
 		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
 		  HAL_Delay(400);
 		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
 		  HAL_Delay(400);
-		HAL_UART_Transmit(&huart1, (const uint8_t *)vStr, 11, 100);
+		  HAL_UART_Transmit(&huart1, (const uint8_t *)vStr, 12, 100);
 
 	}
+
 
     /* USER CODE END WHILE */
 
@@ -227,8 +303,8 @@ static void MX_CAN_Init(void)
   hcan.Init.Prescaler = 18;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_4TQ;
-  hcan.Init.TimeSeg2 = CAN_BS2_3TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_3TQ;
+  hcan.Init.TimeSeg2 = CAN_BS2_4TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
   hcan.Init.AutoWakeUp = DISABLE;
